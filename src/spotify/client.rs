@@ -80,18 +80,11 @@ impl Spotify {
     }
 
     fn auth_headers(&self) -> Authorization<Bearer> {
-        match self.access_token {
-            Some(ref token) => Authorization(Bearer { token: token.to_owned() }),
-            None => {
-                match self.client_credentials_manager {
-                    Some(ref client_credentials_manager) => {
-                        let token = client_credentials_manager.get_access_token();
-                        Authorization(Bearer { token: token })
-                    }
-                    None => panic!("client credentials manager is none"),
-                }
-            }
-        }
+        let client_credentials_manager = self.client_credentials_manager.as_ref()
+            .expect("client credentials manager is none");
+
+        let token = client_credentials_manager.get_access_token();
+        Authorization(Bearer { token })
     }
 
     fn internal_call(&self, method: Method, url: &str, payload: &Value) -> Result<String> {
@@ -99,6 +92,7 @@ impl Spotify {
         if !url.starts_with("http") {
             url = ["https://api.spotify.com/v1/", &url].concat().into();
         }
+        
 
         let mut headers = Headers::new();
         headers.set(self.auth_headers());
